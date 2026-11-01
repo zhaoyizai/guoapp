@@ -69,6 +69,7 @@ Flutter 多端独立短剧 / 影视应用，原名「短剧库 APP」。站源�
 | --- | --- |
 | Android 8.0+ | 三架构（arm64-v8a / armeabi-v7a / x86_64）APK；同一签名可覆盖升级 |
 | Windows 10/11 x64 | 完整 ZIP 解压后运行 `hongguojian.exe` / `zhenguojian.exe`，保留所有 DLL 与 `data`；局域网原生发现依赖 Windows 10 1903+ |
+| Linux x64 | 完整 TAR.GZ 解压后执行 `hongguojian.sh` / `zhenguojian.sh`（或直接运行同名可执行文件），保留 `lib` 与 `data`；需系统已装 GTK3、libmpv 与 json-glib（Debian/Ubuntu：`sudo apt install libgtk-3-0 libmpv2 libjson-glib-1.0-0`），FFmpegKit 与 Go 核心随包分发；局域网自动发现暂不支持，可在同步页手动填写对方地址 |
 | Android TV | 与手机共用源码，自动识别电视模式并保持横屏；待电视 / 盒子实机验收 |
 | iOS 15.1+ | 已加入工程、Go 核心链接、媒体依赖、文件管理与构建脚本；iOS 播放页禁用 media_kit_video 硬件纹理加速以规避 libmpv 渲染崩溃；待 Xcode 构建与真机验收，无已签名 IPA |
 
@@ -99,7 +100,7 @@ keyPassword=你的密码
 
 ## 开发与构建
 
-Flutter `3.47.4`、Dart `3.12+`、Go `1.24.1+`、Python `3.10+`。Android 需要 JDK 17、SDK 36、NDK `28.2.13676358`；Windows 需要 Visual Studio C++ 桌面组件及 MinGW-w64 x64；iOS 需要 macOS、完整 Xcode 和 CocoaPods。
+Flutter `3.47.4`、Dart `3.12+`、Go `1.24.1+`、Python `3.10+`。Android 需要 JDK 17、SDK 36、NDK `28.2.13676358`；Windows 需要 Visual Studio C++ 桌面组件及 MinGW-w64 x64；iOS 需要 macOS、完整 Xcode 和 CocoaPods；Linux 需要 clang、CMake、Ninja、pkg-config 及 `libgtk-3-dev`、`libjson-glib-dev`、`liblzma-dev`（运行需要 GTK3、libmpv、json-glib 运行库）。
 
 构建脚本对子进程默认设置 `GOPROXY=https://goproxy.cn,direct`、`GOSUMDB=off`，同名环境变量可覆盖。
 
@@ -117,13 +118,18 @@ python3 scripts/build_android.py --cn-mirrors    # 国内镜像
 ~~~
 
 ~~~sh
+python3 scripts/build_linux.py
+python3 scripts/build_linux.py --all-sources
+~~~
+
+~~~sh
 python3 scripts/build_ios.py
 python3 scripts/build_ios.py --all-sources
 python3 scripts/build_ios.py --core-only [--simulator]
 python3 scripts/build_ios.py --export-options /path/to/ExportOptions.plist
 ~~~
 
-产物在 `dist/android`、`dist/windows`、`dist/ios`，红果版以 `hongguojian-` 开头，全站源版以 `zhenguojian-` 开头。
+产物在 `dist/android`、`dist/windows`、`dist/linux`、`dist/ios`，红果版以 `hongguojian-` 开头，全站源版以 `zhenguojian-` 开头。
 
 首次 Android 调试先编译对应架构核心，再运行：
 
@@ -177,7 +183,7 @@ python3 scripts/sync_source.py --check
 | --- | --- |
 | `lib` | 页面、播放器、本地用户、FFI、下载和媒体处理 |
 | `native/core`、`native/bridge` | 独立站源核心、缓存、下载、目录迁移及 C ABI |
-| `android`、`windows`、`ios` | 平台工程与必要资源 |
+| `android`、`windows`、`linux`、`ios` | 平台工程与必要资源 |
 | `assets/video_enhancement`、`packages/media_kit_libs_windows_video` | 增强 Shader 与许可、固定 Windows 媒体依赖插件 |
 | `scripts`、`.github/workflows` | 构建、签名、验证、同步和版本快照 |
 | `test`、`integration_test` | 自动化与设备回归 |

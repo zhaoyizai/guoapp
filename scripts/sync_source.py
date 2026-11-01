@@ -46,12 +46,17 @@ EXCLUDED_PATHS = {
     'windows/flutter/generated_plugin_registrant.cc',
     'windows/flutter/generated_plugin_registrant.h',
     'windows/flutter/generated_plugins.cmake',
+    'linux/flutter/generated_plugin_registrant.cc',
+    'linux/flutter/generated_plugin_registrant.h',
+    'linux/flutter/generated_plugins.cmake',
+    'linux/runner/duanju_core.h',
 }
 REQUIRED_FILES = {
     'AGENTS.md', 'README.md', 'pubspec.yaml', 'pubspec.lock', 'lib/main.dart',
     'native/go.mod', 'native/go.sum', 'native/bridge/main.go',
     'android/app/build.gradle.kts', 'android/gradle/wrapper/gradle-wrapper.properties',
     'windows/CMakeLists.txt', 'windows/flutter/CMakeLists.txt',
+    'linux/CMakeLists.txt', 'linux/flutter/CMakeLists.txt',
     '.github/workflows/build.yml', 'scripts/build_native.py',
 }
 

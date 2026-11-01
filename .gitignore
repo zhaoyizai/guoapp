@@ -18,6 +18,11 @@ key.properties
 .idea/
 *.iml
 windows/runner/duanju_core.h
+linux/runner/duanju_core.so
+linux/runner/duanju_core.h
+linux/flutter/ephemeral/
+linux/flutter/generated_plugin_registrant.*
+linux/flutter/generated_plugins.cmake
 windows/flutter/generated_plugin_registrant.*
 windows/flutter/generated_plugins.cmake
 .venv/

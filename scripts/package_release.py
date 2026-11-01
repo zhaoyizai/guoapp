@@ -2,6 +2,7 @@ import argparse
 import hashlib
 import re
 import shutil
+import tarfile
 import zipfile
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from app_build import BuildVariant, add_variant_argument
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
-parser.add_argument('--platform', choices=['android', 'windows'], required=True)
+parser.add_argument('--platform', choices=['android', 'windows', 'linux'], required=True)
 parser.add_argument('--abi', action='append', choices=['arm64-v8a', 'armeabi-v7a', 'x86_64'])
 add_variant_argument(parser)
 options = parser.parse_args()
@@ -37,7 +38,7 @@ if options.platform == 'android':
         target = output / f'{variant.slug}-{version}-{abi}.apk'
         shutil.copy2(source, target)
         artifacts.append(target)
-else:
+elif options.platform == 'windows':
     bundle = root / 'build' / 'windows' / 'x64' / 'runner' / 'Release'
     required = ['zhenguojian.exe', 'duanju_core.dll', 'flutter_windows.dll', 'libffmpegkit.dll',
                 'libmpv-2.dll', 'msvcp140.dll', 'vcruntime140.dll',
@@ -53,6 +54,30 @@ else:
                 if relative == 'zhenguojian.exe':
                     relative = variant.slug + '.exe'
                 archive.write(source, relative)
+    artifacts.append(target)
+else:
+    bundle = root / 'build' / 'linux' / 'x64' / 'release' / 'bundle'
+    required = ['zhenguojian', 'duanju_core.so', 'lib/libflutter_linux_gtk.so', 'lib/libapp.so',
+                'lib/libffmpegkit.so', 'data/icudtl.dat', 'data/flutter_assets/AssetManifest.bin']
+    missing = [name for name in required if not (bundle / name).is_file()]
+    if missing:
+        raise SystemExit('Linux 安装包缺少文件：' + ', '.join(missing))
+    launcher = bundle / f'{variant.slug}.sh'
+    launcher.write_text(
+        '#!/bin/sh\n'
+        'HERE=$(cd "$(dirname "$0")" && pwd)\n'
+        'export LD_LIBRARY_PATH="$HERE/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"\n'
+        'exec "$HERE/' + variant.slug + '" "$@"\n',
+        encoding='utf-8')
+    launcher.chmod(0o755)
+    target = output / f'{variant.slug}-{version}-linux-x64.tar.gz'
+    with tarfile.open(target, 'w:gz') as archive:
+        for source in sorted(bundle.rglob('*')):
+            if source.is_file() or source.is_symlink():
+                relative = source.relative_to(bundle).as_posix()
+                if relative == 'zhenguojian':
+                    relative = variant.slug
+                archive.add(source, relative)
     artifacts.append(target)
 
 checksums = []

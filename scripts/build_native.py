@@ -9,7 +9,7 @@ from app_build import BuildVariant, add_variant_argument
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
-parser.add_argument('--platform', choices=['android', 'windows', 'darwin'], required=True)
+parser.add_argument('--platform', choices=['android', 'windows', 'darwin', 'linux'], required=True)
 parser.add_argument('--abi', action='append', choices=['arm64-v8a', 'armeabi-v7a', 'x86_64'])
 add_variant_argument(parser)
 options = parser.parse_args()
@@ -69,9 +69,14 @@ elif options.platform == 'windows':
         raise SystemExit('请安装 MinGW-w64，并将其 bin 目录加入 PATH。')
     build('windows', 'amd64', compiler, root / 'windows' / 'runner' / 'duanju_core.dll',
           {'CGO_LDFLAGS': '-static-libgcc'})
-else:
+elif options.platform == 'darwin':
     compiler = shutil.which('clang')
     if not compiler:
         raise SystemExit('需要安装 Xcode Command Line Tools。')
     build('darwin', 'arm64' if platform.machine() == 'arm64' else 'amd64', compiler,
           root / 'native' / 'build' / 'darwin' / 'libduanju_core.dylib')
+else:
+    compiler = shutil.which('clang')
+    if not compiler:
+        raise SystemExit('请安装 clang。')
+    build('linux', 'amd64', compiler, root / 'linux' / 'runner' / 'duanju_core.so')

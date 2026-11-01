@@ -67,9 +67,30 @@ class AppBuildTests(unittest.TestCase):
                 subprocess.run(['cmake', '-P', str(script)], check=True, capture_output=True)
                 self.assertEqual(result.read_text(encoding='utf-8'), expected)
 
-    def test_android_and_windows_propagate_one_edition_to_core_flutter_and_package(self):
+    @unittest.skipUnless(shutil.which('cmake'), 'CMake is unavailable')
+    def test_linux_reads_defines_from_flutter_tool_environment(self):
+        branding = Path(__file__).resolve().parents[1] / 'linux/runner/app_branding.cmake'
+        for flags, expected in [
+            ([], '红果鉴'),
+            (['ALL_SOURCES=true'], '真果鉴'),
+            (['OTHER=true', 'ALL_SOURCES=false'], '红果鉴'),
+            (['ALL_SOURCES=true', 'ALL_SOURCES=false'], '红果鉴'),
+        ]:
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as temporary:
+                script = Path(temporary) / 'check.cmake'
+                result = Path(temporary) / 'name.txt'
+                script.write_text(
+                    'list(APPEND FLUTTER_TOOL_ENVIRONMENT "OTHER=1" "DART_DEFINES=' + dart_defines(*flags) + '")\n'
+                    'include("' + branding.as_posix() + '")\n'
+                    'file(WRITE "' + result.as_posix() + '" "${APP_DISPLAY_NAME}")\n',
+                    encoding='utf-8',
+                )
+                subprocess.run(['cmake', '-P', str(script)], check=True, capture_output=True)
+                self.assertEqual(result.read_text(encoding='utf-8'), expected)
+
+    def test_android_windows_and_linux_propagate_one_edition_to_core_flutter_and_package(self):
         root = Path(__file__).resolve().parent
-        for target in ['android', 'windows']:
+        for target in ['android', 'windows', 'linux']:
             for enabled in [False, True]:
                 with self.subTest(target=target, all_sources=enabled):
                     script = root / f'build_{target}.py'
