@@ -194,6 +194,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: 包内自检（原生核心 + FFmpegKit 转封装 + media_kit 播放）
+        env:
+          PYTHONUTF8: '1'
         run: python scripts/smoke_windows.py ${{ matrix.arguments }}
 
 

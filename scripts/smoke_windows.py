@@ -3,9 +3,20 @@ import json
 import platform
 import re
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
+
+for stream in (sys.stdout, sys.stderr):
+    try:
+        stream.reconfigure(encoding='utf-8', errors='replace')
+    except (AttributeError, ValueError):
+        pass
+
+
+def emit(text):
+    print(text.encode('utf-8', 'replace').decode('utf-8', 'replace'))
 
 from app_build import BuildVariant, add_variant_argument
 
@@ -33,12 +44,14 @@ def main():
             [str(directory / (variant.slug + '.exe')), '--package-smoke', str(report), str(media)],
             cwd=directory, timeout=180, capture_output=True, text=True, errors='replace')
         output = (process.stdout or '') + (process.stderr or '')
-        if output.strip():
-            print(output)
         if not report.is_file():
-            raise SystemExit(f'包内自检进程退出码 {process.returncode}，没有生成报告：\n{output}')
+            if output.strip():
+                emit(output)
+            raise SystemExit(f'包内自检进程退出码 {process.returncode}，没有生成报告')
         evidence = json.loads(report.read_text(encoding='utf-8'))
-        print(json.dumps(evidence, ensure_ascii=False))
+        emit(json.dumps(evidence, ensure_ascii=False))
+        if output.strip():
+            emit(output)
         if evidence.get('ok') is not True:
             raise SystemExit('Windows 包启动验收未通过：' + json.dumps(evidence, ensure_ascii=False))
         output = root / 'build' / 'windows-package-smoke.json'
