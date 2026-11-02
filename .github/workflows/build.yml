@@ -139,10 +139,9 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   windows:
-    if: false
     needs: checks
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -153,6 +152,48 @@ jobs:
             arguments: '--all-sources'
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - name: 安装 MinGW-w64（Go 核心使用 CGO）
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+      - name: 将 MinGW 加入 PATH
+        shell: pwsh
+        run: |
+          $mingw = 'C:\msys64\mingw64\bin'
+          $compiler = Join-Path $mingw 'x86_64-w64-mingw32-gcc.exe'
+          if (-not (Test-Path $compiler)) { throw "未找到 MinGW 编译器：$compiler" }
+          $mingw | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: 确保 ffmpeg 可用（包内自检生成测试片源）
+        shell: pwsh
+        run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+            choco install ffmpeg -y --no-progress
+          }
+          ffmpeg -version | Select-Object -First 1
+      - run: python scripts/build_windows.py ${{ matrix.arguments }}
+      - name: 包内自检（原生核心 + FFmpegKit 转封装 + media_kit 播放）
+        run: python scripts/smoke_windows.py ${{ matrix.arguments }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.edition }}-windows
+          path: dist/windows/*
+          if-no-files-found: error
+          retention-days: 14
+
 
   ios:
     if: false
@@ -171,7 +212,7 @@ jobs:
       - uses: actions/checkout@v4
 
   release:
-    needs: [android]
+    needs: [android, windows]
     if: always() && needs.android.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -218,15 +259,21 @@ jobs:
             printf '%s\n\n' "版本 ${version}。两个版本功能相同，区别只在站源范围，按需选择："
             printf '%s\n' "- 红果鉴 hongguojian：仅红果站源"
             printf '%s\n' "- 真果鉴 zhenguojian：全部站源"
-            printf '\n%s\n' "$apk_note"
-            printf '%s\n' "- *-arm64-v8a.apk：绝大多数手机选这个"
-            printf '%s\n' "- *-armeabi-v7a.apk：较老的 32 位手机"
-            printf '%s\n' "- *-x86_64.apk：模拟器"
-            printf '\n%s\n' "iOS（未签名，需自行签名后才能安装）："
-            printf '%s\n' "- *-ios-unsigned.ipa：未签名 IPA，用 AltStore / Sideloadly / TrollStore 等工具自签后安装"
-            printf '%s\n' "- *-ios-unsigned-app.zip：未签名 Runner.app 压缩包，供自行签名 / 打包使用"
-            printf '\n%s\n' "Windows（解压后运行 hongguojian.exe 或 zhenguojian.exe）："
-            printf '%s\n' "- *-windows-x64.zip：Windows 10/11 x64 完整包；构建机没有音频和图形设备，播放自检未通过，未做设备验收"
+            if ls release/*.apk >/dev/null 2>&1; then
+              printf '\n%s\n' "$apk_note"
+              printf '%s\n' "- *-arm64-v8a.apk：绝大多数手机选这个"
+              printf '%s\n' "- *-armeabi-v7a.apk：较老的 32 位手机"
+              printf '%s\n' "- *-x86_64.apk：模拟器"
+            fi
+            if ls release/*-windows-x64.zip >/dev/null 2>&1; then
+              printf '\n%s\n' "Windows（解压后运行 hongguojian.exe 或 zhenguojian.exe，保留全部 DLL 与 data）："
+              printf '%s\n' "- *-windows-x64.zip：Windows 10/11 x64 完整包；CI 构建后已跑通包内自检（原生核心、FFmpegKit 转封装、media_kit 播放），未做设备验收"
+            fi
+            if ls release/*-ios-unsigned* >/dev/null 2>&1; then
+              printf '\n%s\n' "iOS（未签名，需自行签名后才能安装）："
+              printf '%s\n' "- *-ios-unsigned.ipa：未签名 IPA，用 AltStore / Sideloadly / TrollStore 等工具自签后安装"
+              printf '%s\n' "- *-ios-unsigned-app.zip：未签名 Runner.app 压缩包，供自行签名 / 打包使用"
+            fi
             printf '\n%s\n' "校验：SHA256SUMS.txt"
             if printf '%s\n' "${{ vars.ANDROID_CERT_SHA256 }}" | grep -q .; then
               printf '%s\n' "签名证书 SHA-256：${{ vars.ANDROID_CERT_SHA256 }}"
