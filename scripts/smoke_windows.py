@@ -52,8 +52,12 @@ def main():
         emit(json.dumps(evidence, ensure_ascii=False))
         if output.strip():
             emit(output)
-        if evidence.get('ok') is not True:
+        required = ('nativeCore', 'ffprobe', 'remux')
+        if evidence.get('ok') is not True or any(evidence.get(key) is not True for key in required):
             raise SystemExit('Windows 包启动验收未通过：' + json.dumps(evidence, ensure_ascii=False))
+        if evidence.get('mediaKitPlayback') is not True:
+            emit('::warning::播放推进自检未通过（构建机常见无音频/图形设备，需实机复验）：'
+                 + str(evidence.get('playbackNote', '')))
         output = root / 'build' / 'windows-package-smoke.json'
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(evidence, indent=2) + '\n', encoding='utf-8')

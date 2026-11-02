@@ -68,7 +68,7 @@ Flutter 多端独立短剧 / 影视应用，原名「短剧库 APP」。站源�
 | 平台 | 包与状态 |
 | --- | --- |
 | Android 8.0+ | 三架构（arm64-v8a / armeabi-v7a / x86_64）APK；同一签名可覆盖升级 |
-| Windows 10/11 x64 | 完整 ZIP 解压后运行 `hongguojian.exe` / `zhenguojian.exe`，保留所有 DLL 与 `data`；由 GitHub Actions 构建，并自动执行包内自检（原生核心、FFmpegKit 转封装、media_kit 播放）；局域网原生发现依赖 Windows 10 1903+ |
+| Windows 10/11 x64 | 完整 ZIP 解压后运行 `hongguojian.exe` / `zhenguojian.exe`，保留所有 DLL 与 `data`；由 GitHub Actions 构建，并自动执行包内自检（原生核心、FFmpegKit 转封装；构建机没有音频/图形设备时，播放推进检查会标记为需实机复验）；局域网原生发现依赖 Windows 10 1903+ |
 | Linux x64 | 完整 TAR.GZ 解压后执行 `hongguojian.sh` / `zhenguojian.sh`（或直接运行同名可执行文件），保留 `lib` 与 `data`；需系统已装 GTK3、libmpv 与 json-glib（Debian/Ubuntu：`sudo apt install libgtk-3-0 libmpv2 libjson-glib-1.0-0`），FFmpegKit 与 Go 核心随包分发；局域网自动发现暂不支持，可在同步页手动填写对方地址 |
 | Android TV | 与手机共用源码，自动识别电视模式并保持横屏；待电视 / 盒子实机验收 |
 | iOS 15.1+ | 已加入工程、Go 核心链接、媒体依赖、文件管理与构建脚本；iOS 播放页禁用 media_kit_video 硬件纹理加速以规避 libmpv 渲染崩溃；待 Xcode 构建与真机验收，无已签名 IPA |
@@ -82,7 +82,7 @@ Flutter 多端独立短剧 / 影视应用，原名「短剧库 APP」。站源�
 | 产物 | 内容 |
 | --- | --- |
 | `*-android` | 三种架构 APK 和 SHA256 |
-| `*-windows` | 完整 ZIP 和 SHA256；构建后自动跑包内播放自检，自检失败则本次构建失败 |
+| `*-windows` | 完整 ZIP 和 SHA256；构建后自动跑包内自检，原生核心或 FFmpegKit 自检失败则本次构建失败，播放推进检查不通过只告警 |
 | `*-ios-unsigned` | 未签名 `.app` ZIP 和 SHA256，不能直接当已签名 IPA 安装（iOS job 当前未启用） |
 
 推送 `main` 且 android 与 windows 均构建成功时，自动创建 / 更新 GitHub Release（tag `app-v{version}`），Android 与 Windows 产物一起挂上。发布新版本前需先在 `pubspec.yaml` 提升 `version`，否则会覆盖同名 tag 的 Release。

@@ -271,7 +271,7 @@ jobs:
             fi
             if ls release/*-windows-x64.zip >/dev/null 2>&1; then
               printf '\n%s\n' "Windows（解压后运行 hongguojian.exe 或 zhenguojian.exe，保留全部 DLL 与 data）："
-              printf '%s\n' "- *-windows-x64.zip：Windows 10/11 x64 完整包；CI 构建后已跑通包内自检（原生核心、FFmpegKit 转封装、media_kit 播放），未做设备验收"
+              printf '%s\n' "- *-windows-x64.zip：Windows 10/11 x64 完整包；CI 构建后已跑通原生核心与 FFmpegKit 转封装自检；播放推进需实机验收"
             fi
             if ls release/*-ios-unsigned* >/dev/null 2>&1; then
               printf '\n%s\n' "iOS（未签名，需自行签名后才能安装）："
