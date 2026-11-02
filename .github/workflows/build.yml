@@ -165,6 +165,7 @@ jobs:
           channel: stable
           cache: true
       - name: 安装 MinGW-w64（Go 核心使用 CGO）
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -173,10 +174,11 @@ jobs:
       - name: 将 MinGW 加入 PATH
         shell: pwsh
         run: |
-          $mingw = 'C:\msys64\mingw64\bin'
+          $mingw = Join-Path '${{ steps.msys2.outputs.msys2-location }}' 'mingw64\bin'
           $compiler = Join-Path $mingw 'x86_64-w64-mingw32-gcc.exe'
           if (-not (Test-Path $compiler)) { throw "未找到 MinGW 编译器：$compiler" }
           $mingw | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & $compiler --version | Select-Object -First 1
       - name: 确保 ffmpeg 可用（包内自检生成测试片源）
         shell: pwsh
         run: |
